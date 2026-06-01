@@ -1,0 +1,54 @@
+@reference "../../index.css";
+
+.rich-text-editor-container {
+  @apply rounded-3xl overflow-hidden bg-white border border-neutral-200 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20;
+}
+
+.rich-text-editor-container .ql-toolbar.ql-snow {
+  @apply border-0 border-b border-neutral-200 bg-neutral-50 px-4 py-3 font-sans rounded-t-3xl;
+}
+
+.rich-text-editor-container .ql-container.ql-snow {
+  @apply border-0 font-sans text-sm;
+  min-height: 250px;
+}
+
+.rich-text-editor-container .ql-editor {
+  @apply p-5;
+  min-height: 250px;
+}
+
+.rich-text-editor-container .ql-editor.ql-blank::before {
+  @apply text-neutral-400 font-medium not-italic;
+}
+
+.rich-text-editor-container .ql-snow .ql-picker {
+  @apply text-neutral-700 font-medium;
+}
+
+.rich-text-editor-container .ql-snow .ql-stroke {
+  @apply stroke-neutral-600;
+}
+
+.rich-text-editor-container .ql-snow .ql-fill {
+  @apply fill-neutral-600;
+}
+
+.rich-text-editor-container .ql-snow .ql-picker-options {
+  @apply rounded-xl border border-neutral-200 shadow-lg mt-2 overflow-hidden py-1;
+}
+
+.rich-text-editor-container .ql-snow .ql-picker-item:hover,
+.rich-text-editor-container .ql-snow .ql-picker-label:hover {
+  @apply text-blue-600;
+}
+
+.rich-text-editor-container .ql-snow .ql-picker-item:hover .ql-stroke,
+.rich-text-editor-container .ql-snow .ql-picker-label:hover .ql-stroke {
+  @apply stroke-blue-600;
+}
+
+.rich-text-editor-container .ql-snow .ql-picker-item:hover .ql-fill,
+.rich-text-editor-container .ql-snow .ql-picker-label:hover .ql-fill {
+  @apply fill-blue-600;
+}
