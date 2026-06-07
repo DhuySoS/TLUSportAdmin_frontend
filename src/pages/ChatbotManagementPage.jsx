@@ -51,6 +51,8 @@ const ChatbotManagementPage = () => {
     try {
       setLoadingStats(true);
       const res = await chatbotServices.getStats();
+      console.log("res", res);
+
       if (res && res.code === 200) {
         setStats(res.data);
       }
@@ -74,6 +76,7 @@ const ChatbotManagementPage = () => {
         setSessions(res.data.items || []);
         setTotalPages(res.data.totalPage || 1);
       }
+      console.log("sessions", res.data);
     } catch (error) {
       console.error("Lỗi lấy danh sách phiên chat:", error);
       toast.error("Không thể tải danh sách cuộc trò chuyện");
@@ -87,6 +90,7 @@ const ChatbotManagementPage = () => {
     try {
       setLoadingMessages(true);
       const res = await chatbotServices.getSessionMessages(sessionId, page, 50);
+      console.log("message", res.data);
       if (res && res.code === 200) {
         if (page === 1) {
           setMessages(res.data.items || []);
@@ -226,9 +230,11 @@ const ChatbotManagementPage = () => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     const matchesName = s.userName && s.userName.toLowerCase().includes(term);
-    const matchesEmail = s.userEmail && s.userEmail.toLowerCase().includes(term);
+    const matchesEmail =
+      s.userEmail && s.userEmail.toLowerCase().includes(term);
     const matchesId = s.id && s.id.toLowerCase().includes(term);
-    const matchesMsg = s.lastMessage && s.lastMessage.toLowerCase().includes(term);
+    const matchesMsg =
+      s.lastMessage && s.lastMessage.toLowerCase().includes(term);
     return matchesName || matchesEmail || matchesId || matchesMsg;
   });
 
@@ -242,7 +248,10 @@ const ChatbotManagementPage = () => {
       </div>
 
       {/* 2. MAIN LAYOUT: Split Screen trái/phải */}
-      <div className="mt-8 flex gap-6 items-stretch" style={{ height: "calc(100vh - 280px)", minHeight: "560px" }}>
+      <div
+        className="mt-8 flex gap-6 items-stretch"
+        style={{ height: "calc(100vh - 280px)", minHeight: "560px" }}
+      >
         {/* CỘT TRÁI: DANH SÁCH HỘI THOẠI */}
         <div className="w-[360px] shrink-0 overflow-hidden">
           <ConversationList
@@ -267,7 +276,9 @@ const ChatbotManagementPage = () => {
             messages={messages}
             loadingMessages={loadingMessages}
             hasMoreMessages={hasMoreMessages}
-            onLoadMoreMessages={() => loadActiveMessages(activeSession.id, messagesPage + 1)}
+            onLoadMoreMessages={() =>
+              loadActiveMessages(activeSession.id, messagesPage + 1)
+            }
             onCloseSession={handleCloseSession}
             onReopenSession={handleReopenSession}
             onExportChat={handleExportChat}
