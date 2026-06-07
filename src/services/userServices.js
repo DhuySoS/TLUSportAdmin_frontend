@@ -34,6 +34,13 @@ const userServices = {
     const res = await axiosInstance.get("/users/my-profile");
     return res.data;
   },
+
+  searchUsers: async (keyword, pageNumber = 1, pageSize = 10) => {
+    const res = await axiosInstance.get(
+      `/users/search?keyword=${encodeURIComponent(keyword)}&pageNumber=${pageNumber}&pageSize=${pageSize}`,
+    );
+    return res.data;
+  },
 };
 
 export default userServices;

@@ -6,6 +6,7 @@ import FormSection from "@/components/common/FormSection";
 import PageHeader from "@/components/common/PageHeader";
 import SubmitButton from "@/components/common/SubmitButton";
 import paymentServices from "@/services/paymentServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const EMPTY_FORM = { name: "", code: "", isActive: true };
 
@@ -14,6 +15,23 @@ const PaymentMethodsPage = () => {
   const [methods, setMethods] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const loadMethods = async () => {
     try {
@@ -36,16 +54,22 @@ const PaymentMethodsPage = () => {
     setForm(EMPTY_FORM);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa phương thức thanh toán này?")) return;
-    try {
-      const res = await paymentServices.deletePaymentMethod(id);
-      toast.success(res.message || "Xóa thành công");
-      if (editId === id) handleCancelEdit();
-      loadMethods();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa phương thức thanh toán");
-    }
+  const handleDelete = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa phương thức thanh toán này?",
+      async () => {
+        try {
+          const res = await paymentServices.deletePaymentMethod(id);
+          toast.success(res.message || "Xóa thành công");
+          if (editId === id) handleCancelEdit();
+          loadMethods();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa phương thức thanh toán");
+        }
+      },
+      "danger",
+      "Xóa phương thức thanh toán"
+    );
   };
 
   const handleSubmit = async (event) => {
@@ -166,6 +190,10 @@ const PaymentMethodsPage = () => {
           </div>
         </FormSection>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

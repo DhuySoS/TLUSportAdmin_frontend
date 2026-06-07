@@ -9,6 +9,7 @@ import ImageUpload from "@/components/common/ImageUpload";
 import { slugify } from "@/lib/utils";
 import categoryServices from "@/services/categoryServices";
 import attributeServices from "@/services/attributeServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const initialForm = {
   name: "",
@@ -92,6 +93,24 @@ const CategoriesPage = () => {
     isRequired: true,
     isFilterable: true,
   });
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const flattenCategories = (cats, level = 0, result = []) => {
     cats.forEach((cat) => {
@@ -184,16 +203,22 @@ const CategoriesPage = () => {
     setAssignForm(prev => ({ ...prev, attributeId: "", isRequired: true, isFilterable: true }));
   };
 
-  const handleDeleteAttribute = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa thuộc tính này khỏi danh mục?")) return;
-    try {
-      const res = await categoryServices.deleteCategoryAttribute(id);
-      toast.success(res.message || "Xóa thành công");
-      if (editAttributeId === id) handleCancelEditAttribute();
-      loadAssignedAttributes(assignForm.categoryId);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa thuộc tính");
-    }
+  const handleDeleteAttribute = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa thuộc tính này khỏi danh mục?",
+      async () => {
+        try {
+          const res = await categoryServices.deleteCategoryAttribute(id);
+          toast.success(res.message || "Xóa thành công");
+          if (editAttributeId === id) handleCancelEditAttribute();
+          loadAssignedAttributes(assignForm.categoryId);
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa thuộc tính");
+        }
+      },
+      "danger",
+      "Xóa thuộc tính danh mục"
+    );
   };
 
   const handleChange = (event) => {
@@ -221,17 +246,22 @@ const CategoriesPage = () => {
     setForm(initialForm);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa danh mục này? Các danh mục con cũng sẽ bị ảnh hưởng.")) return;
-
-    try {
-      const res = await categoryServices.deleteCategory(id);
-      toast.success(res.message || "Xóa danh mục thành công");
-      loadCategories();
-      if (editId === id) handleCancelEdit();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa danh mục");
-    }
+  const handleDelete = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa danh mục này? Các danh mục con cũng sẽ bị ảnh hưởng.",
+      async () => {
+        try {
+          const res = await categoryServices.deleteCategory(id);
+          toast.success(res.message || "Xóa danh mục thành công");
+          loadCategories();
+          if (editId === id) handleCancelEdit();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa danh mục");
+        }
+      },
+      "danger",
+      "Xóa danh mục"
+    );
   };
 
   const handleSubmit = async (event) => {
@@ -469,6 +499,10 @@ const CategoriesPage = () => {
           </FormSection>
         </div>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

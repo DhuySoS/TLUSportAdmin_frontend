@@ -6,6 +6,7 @@ import FormSection from "@/components/common/FormSection";
 import PageHeader from "@/components/common/PageHeader";
 import SubmitButton from "@/components/common/SubmitButton";
 import attributeServices from "@/services/attributeServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 /** Kiểm tra chuỗi có phải mã màu hex hợp lệ (#rrggbb / #rgb) */
 const isHexColor = (str) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(str?.trim());
@@ -23,6 +24,24 @@ const AttributesPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editAttributeId, setEditAttributeId] = useState(null);
   const [editValueId, setEditValueId] = useState(null);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const loadAttributes = async () => {
     const res = await attributeServices.getAttributes();
@@ -45,16 +64,22 @@ const AttributesPage = () => {
     setAttributeForm({ name: "", description: "" });
   };
 
-  const handleDeleteAttribute = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa thuộc tính này?")) return;
-    try {
-      const res = await attributeServices.deleteAttribute(id);
-      toast.success(res.message || "Xóa thuộc tính thành công");
-      loadAttributes();
-      if (editAttributeId === id) handleCancelEditAttribute();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa thuộc tính");
-    }
+  const handleDeleteAttribute = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa thuộc tính này?",
+      async () => {
+        try {
+          const res = await attributeServices.deleteAttribute(id);
+          toast.success(res.message || "Xóa thuộc tính thành công");
+          loadAttributes();
+          if (editAttributeId === id) handleCancelEditAttribute();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa thuộc tính");
+        }
+      },
+      "danger",
+      "Xóa thuộc tính"
+    );
   };
 
   const handleAttributeSubmit = async (event) => {
@@ -101,16 +126,22 @@ const AttributesPage = () => {
     setValueForm({ attributeId: "", value: "", description: "", useColor: false });
   };
 
-  const handleDeleteValue = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa giá trị này?")) return;
-    try {
-      const res = await attributeServices.deleteAttributeValue(id);
-      toast.success(res.message || "Xóa giá trị thành công");
-      loadAttributes();
-      if (editValueId === id) handleCancelEditValue();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa giá trị");
-    }
+  const handleDeleteValue = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa giá trị này?",
+      async () => {
+        try {
+          const res = await attributeServices.deleteAttributeValue(id);
+          toast.success(res.message || "Xóa giá trị thành công");
+          loadAttributes();
+          if (editValueId === id) handleCancelEditValue();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa giá trị");
+        }
+      },
+      "danger",
+      "Xóa giá trị thuộc tính"
+    );
   };
 
   const handleValueSubmit = async (event) => {
@@ -373,6 +404,10 @@ const AttributesPage = () => {
           </FormSection>
         </div>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

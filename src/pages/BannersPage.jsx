@@ -8,6 +8,7 @@ import Field from "@/components/common/Field";
 import SubmitButton from "@/components/common/SubmitButton";
 import ImageUpload from "@/components/common/ImageUpload";
 import bannerServices from "@/services/bannerServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const initialForm = {
   title: "",
@@ -23,6 +24,23 @@ const BannersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -78,18 +96,23 @@ const BannersPage = () => {
     setForm(initialForm);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa banner này?")) return;
-
-    try {
-      const res = await bannerServices.deleteBanner(id);
-      toast.success(res.message || "Xóa banner thành công!");
-      if (editId === id) handleCancelEdit();
-      loadBanners();
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Không thể xóa banner.");
-    }
+  const handleDelete = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa banner này?",
+      async () => {
+        try {
+          const res = await bannerServices.deleteBanner(id);
+          toast.success(res.message || "Xóa banner thành công!");
+          if (editId === id) handleCancelEdit();
+          loadBanners();
+        } catch (error) {
+          console.error(error);
+          toast.error(error.response?.data?.message || "Không thể xóa banner.");
+        }
+      },
+      "danger",
+      "Xóa banner"
+    );
   };
 
   const handleSubmit = async (event) => {
@@ -395,6 +418,10 @@ const BannersPage = () => {
           )}
         </FormSection>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

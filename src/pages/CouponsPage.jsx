@@ -7,6 +7,7 @@ import PageHeader from "@/components/common/PageHeader";
 import SubmitButton from "@/components/common/SubmitButton";
 import { formatCurrency } from "@/lib/formatCurrency";
 import couponServices from "@/services/couponServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const EMPTY_FORM = {
   code: "",
@@ -24,6 +25,23 @@ const CouponsPage = () => {
   const [coupons, setCoupons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const loadCoupons = async () => {
     try {
@@ -66,20 +84,50 @@ const CouponsPage = () => {
     setForm(EMPTY_FORM);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa mã giảm giá này?")) return;
-    try {
-      const res = await couponServices.deleteCoupon(id);
-      toast.success(res.message || "Xóa mã giảm giá thành công");
-      if (editId === id) handleCancelEdit();
-      loadCoupons();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa mã giảm giá");
-    }
+  const handleDelete = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa mã giảm giá này?",
+      async () => {
+        try {
+          const res = await couponServices.deleteCoupon(id);
+          toast.success(res.message || "Xóa mã giảm giá thành công");
+          if (editId === id) handleCancelEdit();
+          loadCoupons();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa mã giảm giá");
+        }
+      },
+      "danger",
+      "Xóa mã giảm giá"
+    );
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    const dValue = Number(form.discountValue);
+    if (isNaN(dValue) || dValue <= 0) {
+      toast.error("Giá trị giảm giá phải lớn hơn 0");
+      return;
+    }
+
+    if (form.discountType === "PERCENT" && dValue > 100) {
+      toast.error("Mã giảm giá theo phần trăm không được vượt quá 100%");
+      return;
+    }
+
+    if (!form.startDate || !form.endDate) {
+      toast.error("Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc");
+      return;
+    }
+
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+    if (start >= end) {
+      toast.error("Ngày bắt đầu phải xảy ra trước ngày kết thúc");
+      return;
+    }
+
     setIsLoading(true);
 
     const payload = {
@@ -157,8 +205,10 @@ const CouponsPage = () => {
                 value={form.discountValue}
                 onChange={handleChange}
                 type="number"
+                min="1"
+                max={form.discountType === "PERCENT" ? "100" : undefined}
                 className="admin-input"
-                placeholder="10"
+                placeholder={form.discountType === "PERCENT" ? "10" : "50000"}
                 required
               />
             </Field>
@@ -188,6 +238,7 @@ const CouponsPage = () => {
                 value={form.startDate}
                 onChange={handleChange}
                 type="datetime-local"
+                max={form.endDate || undefined}
                 className="admin-input"
                 required
               />
@@ -198,6 +249,7 @@ const CouponsPage = () => {
                 value={form.endDate}
                 onChange={handleChange}
                 type="datetime-local"
+                min={form.startDate || undefined}
                 className="admin-input"
                 required
               />
@@ -302,6 +354,10 @@ const CouponsPage = () => {
           </div>
         </FormSection>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

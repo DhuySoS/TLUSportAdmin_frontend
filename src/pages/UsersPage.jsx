@@ -8,6 +8,7 @@ import UsersTable from "@/components/users/UsersTable";
 import UserCreateModal from "@/components/users/UserCreateModal";
 import UserEditModal from "@/components/users/UserEditModal";
 import { getAdminRole } from "@/lib/auth";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const EMPTY_FORM = {
   email: "",
@@ -24,6 +25,7 @@ const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState(role === "ROLE_STAFF" ? "ROLE_USER" : "");
 
   const [page, setPage] = useState(1);
@@ -35,13 +37,45 @@ const UsersPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = roleFilter
-        ? await userServices.getUsersByRole(roleFilter, page, pageSize)
-        : await userServices.getAllUsers(page, pageSize);
+      let res;
+      if (debouncedSearchQuery.trim()) {
+        res = await userServices.searchUsers(debouncedSearchQuery.trim(), page, pageSize);
+      } else if (roleFilter) {
+        res = await userServices.getUsersByRole(roleFilter, page, pageSize);
+      } else {
+        res = await userServices.getAllUsers(page, pageSize);
+      }
+
       if (res && res.data) {
         setUsers(res.data.items || []);
         setTotalPages(res.data.totalPage || 1);
@@ -56,11 +90,11 @@ const UsersPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [roleFilter]);
+  }, [debouncedSearchQuery, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter]);
+  }, [page, roleFilter, debouncedSearchQuery]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -124,28 +158,28 @@ const UsersPage = () => {
     }
   };
 
-  const handleToggleStatus = async (user) => {
+  const handleToggleStatus = (user) => {
     const actionText = user.isActive ? "khóa" : "kích hoạt";
-    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản ${user.email}?`)) return;
-    try {
-      await userServices.toggleUserStatus(user.id);
-      toast.success(`Đã ${actionText} tài khoản thành công!`);
-      fetchUsers();
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || `Không thể ${actionText} tài khoản.`);
-    }
+    triggerConfirm(
+      `Bạn có chắc chắn muốn ${actionText} tài khoản ${user.email}?`,
+      async () => {
+        try {
+          await userServices.toggleUserStatus(user.id);
+          toast.success(`Đã ${actionText} tài khoản thành công!`);
+          fetchUsers();
+        } catch (error) {
+          console.error(error);
+          toast.error(error.response?.data?.message || `Không thể ${actionText} tài khoản.`);
+        }
+      },
+      user.isActive ? "danger" : "primary",
+      `${user.isActive ? "Khóa" : "Kích hoạt"} tài khoản`
+    );
   };
 
   const filteredUsers = users.filter((u) => {
-    const searchLower = searchQuery.toLowerCase();
-    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
-    const matchesSearch =
-      u.email?.toLowerCase().includes(searchLower) ||
-      u.phoneNumber?.includes(searchLower) ||
-      fullName.includes(searchLower);
     const matchesRole = !roleFilter || (u.roles && Array.from(u.roles).includes(roleFilter));
-    return matchesSearch && matchesRole;
+    return matchesRole;
   });
 
   return (
@@ -202,6 +236,11 @@ const UsersPage = () => {
         onRoleChange={handleRoleChange}
         onSubmit={handleEditSubmit}
         actionLoading={actionLoading}
+      />
+
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

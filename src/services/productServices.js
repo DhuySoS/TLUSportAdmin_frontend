@@ -46,6 +46,24 @@ const productServices = {
     const res = await axiosInstance.delete(`/products/${id}`);
     return res.data;
   },
+
+  filterProducts: async (filters = {}) => {
+    const res = await axiosInstance.get("/products/filter", {
+      params: {
+        categoryId: filters.categoryId || undefined,
+        brandId: filters.brandId || undefined,
+        minPrice: filters.minPrice || undefined,
+        maxPrice: filters.maxPrice || undefined,
+        attributeValueIds: filters.attributeValueIds || undefined,
+        stockFilter: filters.stockFilter || undefined,
+        sortBy: filters.sortBy || undefined,
+        pageNumber: filters.pageNumber || 1,
+        pageSize: filters.pageSize || 10,
+      },
+      headers: { skipAuth: true },
+    });
+    return res.data;
+  },
 };
 
 export default productServices;

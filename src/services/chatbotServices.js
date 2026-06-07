@@ -3,7 +3,7 @@ import axiosInstance from "./axiosInstance";
 const chatbotServices = {
   getStats: async () => {
     try {
-      const res = await axiosInstance.get("/ai/admin/chatbot/stats");
+      const res = await axiosInstance.get("/manage-ai/admin/chatbot/stats");
       return res.data;
     } catch (error) {
       throw error;
@@ -11,7 +11,7 @@ const chatbotServices = {
   },
   getSessions: async (params = {}) => {
     try {
-      const res = await axiosInstance.get("/ai/admin/chatbot/sessions", {
+      const res = await axiosInstance.get("/manage-ai/admin/chatbot/sessions", {
         params: {
           status: params.status || undefined,
           userId: params.userId || undefined,
@@ -26,9 +26,12 @@ const chatbotServices = {
   },
   getSessionMessages: async (sessionId, page = 1, size = 100) => {
     try {
-      const res = await axiosInstance.get(`/ai/admin/chatbot/sessions/${sessionId}/messages`, {
-        params: { page, size },
-      });
+      const res = await axiosInstance.get(
+        `/manage-ai/admin/chatbot/sessions/${sessionId}/messages`,
+        {
+          params: { page, size },
+        },
+      );
       return res.data;
     } catch (error) {
       throw error;
@@ -36,7 +39,9 @@ const chatbotServices = {
   },
   closeSession: async (sessionId) => {
     try {
-      const res = await axiosInstance.put(`/ai/admin/chatbot/sessions/${sessionId}/close`);
+      const res = await axiosInstance.put(
+        `/manage-ai/admin/chatbot/sessions/${sessionId}/close`,
+      );
       return res.data;
     } catch (error) {
       throw error;
@@ -44,7 +49,9 @@ const chatbotServices = {
   },
   reopenSession: async (sessionId) => {
     try {
-      const res = await axiosInstance.put(`/ai/admin/chatbot/sessions/${sessionId}/reopen`);
+      const res = await axiosInstance.put(
+        `/manage-ai/admin/chatbot/sessions/${sessionId}/reopen`,
+      );
       return res.data;
     } catch (error) {
       throw error;

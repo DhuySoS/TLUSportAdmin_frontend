@@ -9,6 +9,7 @@ import productServices from "@/services/productServices";
 import attributeServices from "@/services/attributeServices";
 import categoryServices from "@/services/categoryServices";
 import skuServices from "@/services/skuServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 // Sub-components
 import ProductFormInfo from "@/components/products/ProductFormInfo";
 import ProductSpecsSection from "@/components/products/ProductSpecsSection";
@@ -51,6 +52,23 @@ const ProductsPage = () => {
   const [editProductId, setEditProductId] = useState(null);
   const [initialSkus, setInitialSkus] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const loadProducts = useCallback(async () => {
     try {
@@ -269,15 +287,21 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDeleteProduct = async (product) => {
-    if (!window.confirm(`Xóa sản phẩm "${product.name}"?`)) return;
-    try {
-      const res = await productServices.deleteProduct(product.id);
-      toast.success(res.message || "Xóa sản phẩm thành công");
-      loadProducts();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa sản phẩm");
-    }
+  const handleDeleteProduct = (product) => {
+    triggerConfirm(
+      `Xóa sản phẩm "${product.name}"?`,
+      async () => {
+        try {
+          const res = await productServices.deleteProduct(product.id);
+          toast.success(res.message || "Xóa sản phẩm thành công");
+          loadProducts();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa sản phẩm");
+        }
+      },
+      "danger",
+      "Xóa sản phẩm"
+    );
   };
 
   const cancelEdit = () => {
@@ -347,6 +371,10 @@ const ProductsPage = () => {
           onSearch={handleSearch}
         />
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

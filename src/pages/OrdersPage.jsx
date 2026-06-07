@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import OrderTabs from "@/components/orders/OrderTabs";
 import OrderList from "@/components/orders/OrderList";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -21,6 +22,23 @@ const OrdersPage = () => {
   const [expandedOrders, setExpandedOrders] = useState({});
   const [returnDetails, setReturnDetails] = useState({});
   const [adminNotes, setAdminNotes] = useState({});
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const tabs = [
     { id: "ALL", label: "Tất cả", icon: ShoppingBag },
@@ -85,71 +103,77 @@ const OrdersPage = () => {
   };
 
   const handleApproveReturn = async (orderId, returnId) => {
-    if (
-      window.confirm(
-        "Bạn có chắc chắn muốn CHẤP NHẬN yêu cầu hoàn trả này và hoàn tiền cho khách hàng?",
-      )
-    ) {
-      setActionLoading((prev) => ({ ...prev, [orderId]: true }));
-      try {
-        const adminNote = adminNotes[orderId] || "";
-        const res = await orderServices.approveReturn(returnId, { adminNote });
-        toast.success(res.message || "Duyệt hoàn trả thành công!", {
-          position: "top-right",
-        });
-        setAdminNotes((prev) => {
-          const copy = { ...prev };
-          delete copy[orderId];
-          return copy;
-        });
-        setReturnDetails((prev) => {
-          const copy = { ...prev };
-          delete copy[orderId];
-          return copy;
-        });
-        fetchOrders();
-      } catch (error) {
-        console.error(error);
-        toast.error(
-          error.response?.data?.message || "Lỗi khi duyệt hoàn trả!",
-          { position: "top-right" },
-        );
-      } finally {
-        setActionLoading((prev) => ({ ...prev, [orderId]: false }));
-      }
-    }
+    triggerConfirm(
+      "Bạn có chắc chắn muốn CHẤP NHẬN yêu cầu hoàn trả này và hoàn tiền cho khách hàng?",
+      async () => {
+        setActionLoading((prev) => ({ ...prev, [orderId]: true }));
+        try {
+          const adminNote = adminNotes[orderId] || "";
+          const res = await orderServices.approveReturn(returnId, { adminNote });
+          toast.success(res.message || "Duyệt hoàn trả thành công!", {
+            position: "top-right",
+          });
+          setAdminNotes((prev) => {
+            const copy = { ...prev };
+            delete copy[orderId];
+            return copy;
+          });
+          setReturnDetails((prev) => {
+            const copy = { ...prev };
+            delete copy[orderId];
+            return copy;
+          });
+          fetchOrders();
+        } catch (error) {
+          console.error(error);
+          toast.error(
+            error.response?.data?.message || "Lỗi khi duyệt hoàn trả!",
+            { position: "top-right" },
+          );
+        } finally {
+          setActionLoading((prev) => ({ ...prev, [orderId]: false }));
+        }
+      },
+      "danger",
+      "Chấp nhận hoàn trả"
+    );
   };
 
   const handleRejectReturn = async (orderId, returnId) => {
-    if (window.confirm("Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hoàn trả này?")) {
-      setActionLoading((prev) => ({ ...prev, [orderId]: true }));
-      try {
-        const adminNote = adminNotes[orderId] || "";
-        const res = await orderServices.rejectReturn(returnId, { adminNote });
-        toast.success(res.message || "Từ chối hoàn trả thành công!", {
-          position: "top-right",
-        });
-        setAdminNotes((prev) => {
-          const copy = { ...prev };
-          delete copy[orderId];
-          return copy;
-        });
-        setReturnDetails((prev) => {
-          const copy = { ...prev };
-          delete copy[orderId];
-          return copy;
-        });
-        fetchOrders();
-      } catch (error) {
-        console.error(error);
-        toast.error(
-          error.response?.data?.message || "Lỗi khi từ chối hoàn trả!",
-          { position: "top-right" },
-        );
-      } finally {
-        setActionLoading((prev) => ({ ...prev, [orderId]: false }));
-      }
-    }
+    triggerConfirm(
+      "Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hoàn trả này?",
+      async () => {
+        setActionLoading((prev) => ({ ...prev, [orderId]: true }));
+        try {
+          const adminNote = adminNotes[orderId] || "";
+          const res = await orderServices.rejectReturn(returnId, { adminNote });
+          toast.success(res.message || "Từ chối hoàn trả thành công!", {
+            position: "top-right",
+          });
+          setAdminNotes((prev) => {
+            const copy = { ...prev };
+            delete copy[orderId];
+            return copy;
+          });
+          setReturnDetails((prev) => {
+            const copy = { ...prev };
+            delete copy[orderId];
+            return copy;
+          });
+          fetchOrders();
+        } catch (error) {
+          console.error(error);
+          toast.error(
+            error.response?.data?.message || "Lỗi khi từ chối hoàn trả!",
+            { position: "top-right" },
+          );
+        } finally {
+          setActionLoading((prev) => ({ ...prev, [orderId]: false }));
+        }
+      },
+      "primary",
+      "Từ chối hoàn trả"
+    );
   };
 
   const executeAction = async (orderId, actionName, serviceCall) => {
@@ -205,11 +229,14 @@ const OrdersPage = () => {
   };
 
   const handleCancel = (order) => {
-    if (
-      window.confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.orderId}?`)
-    ) {
-      executeAction(order.orderId, "Hủy đơn hàng", orderServices.cancelOrder);
-    }
+    triggerConfirm(
+      `Bạn có chắc chắn muốn hủy đơn hàng #${order.orderId}?`,
+      () => {
+        executeAction(order.orderId, "Hủy đơn hàng", orderServices.cancelOrder);
+      },
+      "danger",
+      "Hủy đơn hàng"
+    );
   };
 
   const filteredOrders =
@@ -247,6 +274,11 @@ const OrdersPage = () => {
         handleShip={handleShip}
         handleDeliver={handleDeliver}
         handleCancel={handleCancel}
+      />
+
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

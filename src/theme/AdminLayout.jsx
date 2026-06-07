@@ -118,8 +118,8 @@ const AdminLayout = () => {
     "/orders",
     "/inventory",
     "/products",
-    "/statistics",
-    "/coupons",
+    // "/statistics",
+    // "/coupons",
     "/banners",
     "/chatbot",
     "/users",
@@ -128,7 +128,7 @@ const AdminLayout = () => {
     role === "ROLE_STAFF" &&
     !allowedPathsForStaff.includes(location.pathname)
   ) {
-    return <Navigate to="/statistics" replace />;
+    return <Navigate to="/users" replace />;
   }
 
   // Lọc các item hiển thị trên Sidebar
@@ -186,7 +186,11 @@ const AdminLayout = () => {
           </div>
         </div>
 
-        <nav className="mt-8 flex flex-1 flex-col gap-2">
+        <nav
+          className={`mt-8 mb-4 flex flex-1 flex-col gap-2 overflow-y-auto sidebar-scrollbar ${
+            isCollapsed ? "pr-0" : "pr-1"
+          }`}
+        >
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
 

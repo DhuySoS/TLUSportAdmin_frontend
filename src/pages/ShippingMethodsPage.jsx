@@ -7,6 +7,7 @@ import PageHeader from "@/components/common/PageHeader";
 import SubmitButton from "@/components/common/SubmitButton";
 import { formatCurrency } from "@/lib/formatCurrency";
 import shippingServices from "@/services/shippingServices";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 const EMPTY_FORM = { name: "", cost: "", estimatedDeliveryDays: "" };
 
@@ -15,6 +16,23 @@ const ShippingMethodsPage = () => {
   const [shippingMethods, setShippingMethods] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Xác nhận",
+    message: "",
+    onConfirm: () => {},
+    type: "primary",
+  });
+
+  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
+  };
 
   const loadShippingMethods = async () => {
     try {
@@ -41,16 +59,22 @@ const ShippingMethodsPage = () => {
     setForm(EMPTY_FORM);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa phương thức này?")) return;
-    try {
-      const res = await shippingServices.deleteShippingMethod(id);
-      toast.success(res.message || "Xóa phương thức vận chuyển thành công");
-      if (editId === id) handleCancelEdit();
-      loadShippingMethods();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa phương thức");
-    }
+  const handleDelete = (id) => {
+    triggerConfirm(
+      "Bạn có chắc chắn muốn xóa phương thức này?",
+      async () => {
+        try {
+          const res = await shippingServices.deleteShippingMethod(id);
+          toast.success(res.message || "Xóa phương thức vận chuyển thành công");
+          if (editId === id) handleCancelEdit();
+          loadShippingMethods();
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Không thể xóa phương thức");
+        }
+      },
+      "danger",
+      "Xóa phương thức vận chuyển"
+    );
   };
 
   const handleSubmit = async (event) => {
@@ -177,6 +201,10 @@ const ShippingMethodsPage = () => {
           </div>
         </FormSection>
       </div>
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

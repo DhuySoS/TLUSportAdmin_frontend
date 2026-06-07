@@ -376,7 +376,7 @@ const OrderCard = ({
                               onApproveReturn(order.orderId, returnDetail.id)
                             }
                             disabled={loading}
-                            className="flex-1 py-2 rounded-xl bg-neutral-955 text-white font-bold text-xs hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50"
+                            className="flex-1 py-2 rounded-xl bg-neutral-955 text-white font-bold text-xs bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50"
                           >
                             Chấp nhận hoàn tiền
                           </button>

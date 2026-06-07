@@ -23,6 +23,7 @@ const InventoryPage = () => {
   const [expandedProducts, setExpandedProducts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [filterType, setFilterType] = useState("ALL"); // ALL, IN_STOCK, OUT_OF_STOCK, LOW_STOCK
 
   // Pagination
@@ -37,12 +38,26 @@ const InventoryPage = () => {
   const [note, setNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Debounce keyword search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
       let res;
-      if (keyword.trim()) {
-        res = await productServices.searchProducts(keyword, page, pageSize);
+      if (debouncedKeyword.trim()) {
+        res = await productServices.searchProducts(debouncedKeyword.trim(), page, pageSize);
+      } else if (filterType !== "ALL") {
+        res = await productServices.filterProducts({
+          stockFilter: filterType,
+          pageNumber: page,
+          pageSize: pageSize,
+        });
       } else {
         res = await productServices.getProducts(page, pageSize);
       }
@@ -62,8 +77,12 @@ const InventoryPage = () => {
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedKeyword, filterType]);
+
+  useEffect(() => {
     fetchProducts();
-  }, [page, keyword]);
+  }, [page, debouncedKeyword, filterType]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -151,18 +170,17 @@ const InventoryPage = () => {
 
   // Filter products based on selected option
   const filteredProducts = products.filter((product) => {
-    if (!product.skus || product.skus.length === 0)
-      return filterType === "ALL" || filterType === "OUT_OF_STOCK";
+    // If we filtered on the backend (i.e. no keyword and filterType !== "ALL"),
+    // the backend response is already filtered, so we can return true.
+    if (!debouncedKeyword.trim() || filterType === "ALL") return true;
 
-    const skuMatches = product.skus.some((sku) => {
-      const q = sku.stockQuantity || 0;
-      if (filterType === "OUT_OF_STOCK") return q === 0;
-      if (filterType === "LOW_STOCK") return q > 0 && q <= 10;
-      if (filterType === "IN_STOCK") return q > 10;
-      return true; // ALL
-    });
+    const totalStock =
+      product.skus?.reduce((sum, s) => sum + (s.stockQuantity || 0), 0) || 0;
 
-    return skuMatches;
+    if (filterType === "OUT_OF_STOCK") return totalStock === 0;
+    if (filterType === "LOW_STOCK") return totalStock > 0 && totalStock <= 10;
+    if (filterType === "IN_STOCK") return totalStock > 10;
+    return true; // ALL
   });
 
   return (
