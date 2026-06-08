@@ -48,18 +48,31 @@ const productServices = {
   },
 
   filterProducts: async (filters = {}) => {
-    const res = await axiosInstance.get("/products/filter", {
-      params: {
-        categoryId: filters.categoryId || undefined,
-        brandId: filters.brandId || undefined,
-        minPrice: filters.minPrice || undefined,
-        maxPrice: filters.maxPrice || undefined,
-        attributeValueIds: filters.attributeValueIds || undefined,
-        stockFilter: filters.stockFilter || undefined,
-        sortBy: filters.sortBy || undefined,
-        pageNumber: filters.pageNumber || 1,
-        pageSize: filters.pageSize || 10,
-      },
+    const params = {
+      categoryId: filters.categoryId || undefined,
+      brandId: filters.brandId || undefined,
+      minPrice: filters.minPrice || undefined,
+      maxPrice: filters.maxPrice || undefined,
+      stockFilter: filters.stockFilter || undefined,
+      sortBy: filters.sortBy || undefined,
+      pageNumber: filters.pageNumber || 1,
+      pageSize: filters.pageSize || 10,
+    };
+
+    const queryString = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryString.append(key, value);
+      }
+    });
+
+    if (filters.attributeValueIds && filters.attributeValueIds.length > 0) {
+      filters.attributeValueIds.forEach((id) => {
+        queryString.append("attributeValueIds", id);
+      });
+    }
+
+    const res = await axiosInstance.get(`/products/filter?${queryString.toString()}`, {
       headers: { skipAuth: true },
     });
     return res.data;

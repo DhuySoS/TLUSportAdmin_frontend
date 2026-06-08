@@ -314,7 +314,7 @@ const ProductsPage = () => {
     <div>
       <PageHeader badge="Sản phẩm" title="Quản lý sản phẩm" />
 
-      <div className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
         <FormSection title={editProductId ? "Cập nhật sản phẩm" : "Tạo sản phẩm"}>
           {editProductId && (
             <div className="mb-4 flex items-center justify-between rounded-2xl bg-amber-50 px-4 py-3">

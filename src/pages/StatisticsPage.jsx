@@ -56,12 +56,12 @@ const StatisticsPage = () => {
       if (overviewRes?.data) {
         setOverview(overviewRes.data);
       }
-      
+
       try {
         const usersRes = await userServices.getAllUsers(1, 1000);
         if (usersRes?.data?.items) {
           const count = usersRes.data.items.filter(
-            (u) => u.roles && u.roles.includes("ROLE_USER")
+            (u) => u.roles && u.roles.includes("ROLE_USER"),
           ).length;
           setTotalRoleUsers(count);
         }
@@ -198,10 +198,10 @@ const StatisticsPage = () => {
 
       {/* Row 2: Biểu đồ doanh thu (2/3) & Biểu đồ danh mục (1/3) */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full">
           <RevenueChart data={revenueData} days={days} onDaysChange={setDays} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <CategoryPieChart data={categoryRevenue} />
         </div>
       </div>

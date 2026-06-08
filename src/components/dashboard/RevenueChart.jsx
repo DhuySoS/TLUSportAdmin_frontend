@@ -34,7 +34,7 @@ const RevenueChart = ({ data = [], days = 30, onDaysChange }) => {
   };
 
   return (
-    <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm h-full flex flex-col">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-black text-neutral-900">Thống kê doanh thu & đơn hàng</h3>
@@ -51,7 +51,7 @@ const RevenueChart = ({ data = [], days = 30, onDaysChange }) => {
         </select>
       </div>
 
-      <div className="h-[350px] w-full">
+      <div className="flex-1 min-h-[350px] w-full">
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm font-bold text-neutral-400">
             Không có dữ liệu trong khoảng thời gian này

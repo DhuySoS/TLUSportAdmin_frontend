@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import productServices from "@/services/productServices";
 import skuServices from "@/services/skuServices";
+import attributeServices from "@/services/attributeServices";
 import { toast } from "sonner";
 import { getPaginationRange } from "@/lib/utils";
 
@@ -38,13 +39,65 @@ const InventoryPage = () => {
   const [note, setNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Size filters
+  const [sizes, setSizes] = useState([]);
+  const [selectedSizes, setSelectedSizes] = useState([]);
+
   // Debounce keyword search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedKeyword(keyword);
+      if (keyword.trim()) {
+        // Clear filters if search is active
+        setFilterType("ALL");
+        setSelectedSizes([]);
+      }
     }, 500);
     return () => clearTimeout(timer);
   }, [keyword]);
+
+  // Fetch available size values
+  useEffect(() => {
+    const fetchSizes = async () => {
+      try {
+        const res = await attributeServices.getAttributes();
+        if (res && res.data) {
+          const sizeAttr = res.data.find(
+            (attr) => attr.id === 2 || attr.name?.toLowerCase() === "kích thước"
+          );
+          if (sizeAttr && sizeAttr.values) {
+            const sizeOrder = [
+              "XXS",
+              "XS",
+              "S",
+              "M",
+              "L",
+              "XL",
+              "XXL",
+              "2XL",
+              "3XL",
+              "4XL",
+            ];
+            const sortedSizes = [...sizeAttr.values].sort((a, b) => {
+              const idxA = sizeOrder.indexOf(a.value?.toUpperCase());
+              const idxB = sizeOrder.indexOf(b.value?.toUpperCase());
+              if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+              if (idxA !== -1) return -1;
+              if (idxB !== -1) return 1;
+              const numA = parseFloat(a.value);
+              const numB = parseFloat(b.value);
+              if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+              return a.value.localeCompare(b.value);
+            });
+            setSizes(sortedSizes);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải thuộc tính kích thước:", error);
+      }
+    };
+    fetchSizes();
+  }, []);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -52,9 +105,10 @@ const InventoryPage = () => {
       let res;
       if (debouncedKeyword.trim()) {
         res = await productServices.searchProducts(debouncedKeyword.trim(), page, pageSize);
-      } else if (filterType !== "ALL") {
+      } else if (filterType !== "ALL" || selectedSizes.length > 0) {
         res = await productServices.filterProducts({
-          stockFilter: filterType,
+          stockFilter: filterType !== "ALL" ? filterType : undefined,
+          attributeValueIds: selectedSizes.length > 0 ? selectedSizes : undefined,
           pageNumber: page,
           pageSize: pageSize,
         });
@@ -78,11 +132,28 @@ const InventoryPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedKeyword, filterType]);
+  }, [debouncedKeyword, filterType, selectedSizes]);
 
   useEffect(() => {
     fetchProducts();
-  }, [page, debouncedKeyword, filterType]);
+  }, [page, debouncedKeyword, filterType, selectedSizes]);
+
+  const handleSizeToggle = (sizeId) => {
+    setKeyword("");
+    setDebouncedKeyword("");
+    setSelectedSizes((prev) => {
+      if (prev.includes(sizeId)) {
+        return prev.filter((id) => id !== sizeId);
+      }
+      return [...prev, sizeId];
+    });
+  };
+
+  const handleFilterTypeChange = (type) => {
+    setKeyword("");
+    setDebouncedKeyword("");
+    setFilterType(type);
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -168,20 +239,7 @@ const InventoryPage = () => {
     }).format(amount);
   };
 
-  // Filter products based on selected option
-  const filteredProducts = products.filter((product) => {
-    // If we filtered on the backend (i.e. no keyword and filterType !== "ALL"),
-    // the backend response is already filtered, so we can return true.
-    if (!debouncedKeyword.trim() || filterType === "ALL") return true;
-
-    const totalStock =
-      product.skus?.reduce((sum, s) => sum + (s.stockQuantity || 0), 0) || 0;
-
-    if (filterType === "OUT_OF_STOCK") return totalStock === 0;
-    if (filterType === "LOW_STOCK") return totalStock > 0 && totalStock <= 10;
-    if (filterType === "IN_STOCK") return totalStock > 10;
-    return true; // ALL
-  });
+  const filteredProducts = products;
 
   return (
     <div className="space-y-6">
@@ -192,41 +250,80 @@ const InventoryPage = () => {
       />
 
       {/* Filters and Search */}
-      <div className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-neutral-200 shadow-sm">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="relative flex-1 min-w-[280px] max-w-md"
-        >
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm theo tên..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 rounded-full border border-neutral-300 outline-none focus:border-neutral-950 focus:ring-2 focus:ring-neutral-200 text-sm font-medium"
-          />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 size-5" />
-        </form>
+      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm space-y-4">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="relative flex-1 min-w-[280px] max-w-md"
+          >
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm theo tên..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 rounded-full border border-neutral-300 outline-none focus:border-neutral-950 focus:ring-2 focus:ring-neutral-200 text-sm font-medium"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 size-5" />
+          </form>
 
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "ALL", label: "Tất cả" },
-            { id: "IN_STOCK", label: "Còn hàng (>10)" },
-            { id: "LOW_STOCK", label: "Tồn kho thấp (<=10)" },
-            { id: "OUT_OF_STOCK", label: "Hết hàng (0)" },
-          ].map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => setFilterType(opt.id)}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                filterType === opt.id
-                  ? "bg-neutral-950 text-white shadow-sm"
-                  : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 border border-neutral-200"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "ALL", label: "Tất cả" },
+              { id: "IN_STOCK", label: "Còn hàng (>10)" },
+              { id: "LOW_STOCK", label: "Tồn kho thấp (<=10)" },
+              { id: "OUT_OF_STOCK", label: "Hết hàng (0)" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleFilterTypeChange(opt.id)}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  filterType === opt.id
+                    ? "bg-neutral-950 text-white shadow-sm"
+                    : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 border border-neutral-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {sizes.length > 0 && (
+          <div className="border-t border-neutral-100 pt-4 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider mr-2">
+              Lọc theo kích thước:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {sizes.map((size) => {
+                const isSelected = selectedSizes.includes(size.id);
+                return (
+                  <button
+                    key={size.id}
+                    type="button"
+                    onClick={() => handleSizeToggle(size.id)}
+                    className={`px-3 py-1.5 text-xs font-extrabold rounded-lg border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-neutral-950 text-white border-neutral-950 shadow-sm"
+                        : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900"
+                    }`}
+                  >
+                    {size.value}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedSizes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedSizes([])}
+                className="text-xs font-bold text-neutral-500 hover:text-neutral-900 underline ml-auto transition-colors cursor-pointer"
+              >
+                Xóa lọc size
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Product List Table */}

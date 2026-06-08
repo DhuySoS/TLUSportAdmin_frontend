@@ -4,7 +4,17 @@ import FormSection from "@/components/common/FormSection";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { getPaginationRange } from "@/lib/utils";
 
-const ProductListPanel = ({ products, pageNumber, totalPages = 1, setPage, onEdit, onDelete, onPrevPage, onNextPage, onSearch }) => {
+const ProductListPanel = ({
+  products,
+  pageNumber,
+  totalPages = 1,
+  setPage,
+  onEdit,
+  onDelete,
+  onPrevPage,
+  onNextPage,
+  onSearch,
+}) => {
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
@@ -15,7 +25,7 @@ const ProductListPanel = ({ products, pageNumber, totalPages = 1, setPage, onEdi
   }, [inputValue]);
 
   return (
-    <div className="sticky top-23 h-fit">
+    <div className="h-fit min-w-0">
       <FormSection title="Danh sách sản phẩm">
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
@@ -55,7 +65,8 @@ const ProductListPanel = ({ products, pageNumber, totalPages = 1, setPage, onEdi
                     {formatCurrency(product.basePrice)}
                   </p>
                   <p className="mt-1 text-xs font-medium text-neutral-400">
-                    {product.categoryName || `Category ID: ${product.categoryId || "N/A"}`}
+                    {product.categoryName ||
+                      `Category ID: ${product.categoryId || "N/A"}`}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -91,7 +102,9 @@ const ProductListPanel = ({ products, pageNumber, totalPages = 1, setPage, onEdi
               <button
                 type="button"
                 disabled={pageNumber === 1}
-                onClick={() => setPage?.((p) => Math.max(p - 1, 1)) || onPrevPage?.()}
+                onClick={() =>
+                  setPage?.((p) => Math.max(p - 1, 1)) || onPrevPage?.()
+                }
                 className="rounded-full border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 Trang trước
@@ -127,7 +140,10 @@ const ProductListPanel = ({ products, pageNumber, totalPages = 1, setPage, onEdi
               <button
                 type="button"
                 disabled={pageNumber === totalPages}
-                onClick={() => setPage?.((p) => Math.min(p + 1, totalPages)) || onNextPage?.()}
+                onClick={() =>
+                  setPage?.((p) => Math.min(p + 1, totalPages)) ||
+                  onNextPage?.()
+                }
                 className="rounded-full border border-neutral-300 bg-white px-3.5 py-2 text-xs font-bold hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 Trang sau

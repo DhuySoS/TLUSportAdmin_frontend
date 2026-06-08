@@ -14,13 +14,13 @@ const CategoryPieChart = ({ data = [] }) => {
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue || 0), 0);
 
   return (
-    <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+    <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm flex flex-col h-full">
       <div>
         <h3 className="text-lg font-black text-neutral-900">Doanh thu theo danh mục</h3>
         <p className="text-xs font-semibold text-neutral-400">Tỷ lệ đóng góp doanh thu của các danh mục</p>
       </div>
 
-      <div className="relative my-4 flex h-[280px] w-full items-center justify-center">
+      <div className="relative my-4 flex-1 min-h-[280px] w-full flex items-center justify-center">
         {data.length === 0 ? (
           <div className="text-sm font-bold text-neutral-400">Không có dữ liệu danh mục</div>
         ) : (
