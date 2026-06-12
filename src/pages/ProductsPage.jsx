@@ -52,6 +52,7 @@ const ProductsPage = () => {
   const [editProductId, setEditProductId] = useState(null);
   const [initialSkus, setInitialSkus] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'active', 'inactive'
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     title: "Xác nhận",
@@ -72,18 +73,30 @@ const ProductsPage = () => {
 
   const loadProducts = useCallback(async () => {
     try {
-      const res = searchKeyword.trim()
-        ? await productServices.searchProducts(searchKeyword, pageNumber, 8)
-        : await productServices.getProducts(pageNumber, 8);
+      let res;
+      if (searchKeyword.trim()) {
+        res = await productServices.searchProducts(searchKeyword, pageNumber, 8);
+      } else if (statusFilter === "active") {
+        res = await productServices.getProductIsActive(pageNumber, 8, true);
+      } else if (statusFilter === "inactive") {
+        res = await productServices.getProductIsActive(pageNumber, 8, false);
+      } else {
+        res = await productServices.getProducts(pageNumber, 8);
+      }
       setProducts(res.data?.items || []);
       setTotalPages(res.data?.totalPage || 1);
     } catch (error) {
       console.error(error);
     }
-  }, [pageNumber, searchKeyword]);
+  }, [pageNumber, searchKeyword, statusFilter]);
 
   const handleSearch = useCallback((keyword) => {
     setSearchKeyword(keyword);
+    setPageNumber(1);
+  }, []);
+
+  const handleStatusFilterChange = useCallback((status) => {
+    setStatusFilter(status);
     setPageNumber(1);
   }, []);
 
@@ -369,6 +382,8 @@ const ProductsPage = () => {
           onPrevPage={() => setPageNumber((p) => Math.max(1, p - 1))}
           onNextPage={() => setPageNumber((p) => p + 1)}
           onSearch={handleSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={handleStatusFilterChange}
         />
       </div>
       <ConfirmModal

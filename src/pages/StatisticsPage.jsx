@@ -54,6 +54,7 @@ const StatisticsPage = () => {
         ]);
 
       if (overviewRes?.data) {
+        // console.log("overviewRes", overviewRes?.data);
         setOverview(overviewRes.data);
       }
 
@@ -78,6 +79,7 @@ const StatisticsPage = () => {
       // Group 365 days data into 12 months for MonthlyBarChart
       if (yearlyRevenueRes?.data) {
         const aggregated = aggregateByMonth(yearlyRevenueRes.data);
+        // console.log("aggregated", yearlyRevenueRes?.data);
         setMonthlyData(aggregated);
       }
     } catch (error) {

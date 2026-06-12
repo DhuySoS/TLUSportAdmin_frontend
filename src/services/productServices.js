@@ -16,6 +16,17 @@ const productServices = {
     return res.data;
   },
 
+  getProductIsActive: async (
+    pageNumber = 1,
+    pageSize = 10,
+    isActive = true,
+  ) => {
+    const res = await axiosInstance.get(
+      `/products/isActive?pageNumber=${pageNumber}&pageSize=${pageSize}&isActive=${isActive}`
+    );
+    return res.data;
+  },
+
   searchProducts: async (keyword = "", pageNumber = 1, pageSize = 10) => {
     try {
       const res = await axiosInstance.get("/products/search", {
@@ -72,9 +83,12 @@ const productServices = {
       });
     }
 
-    const res = await axiosInstance.get(`/products/filter?${queryString.toString()}`, {
-      headers: { skipAuth: true },
-    });
+    const res = await axiosInstance.get(
+      `/products/filter?${queryString.toString()}`,
+      {
+        headers: { skipAuth: true },
+      },
+    );
     return res.data;
   },
 };

@@ -38,6 +38,7 @@ const OrdersPage = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [statusCounts, setStatusCounts] = useState({});
   const [pageSize] = useState(10);
 
   const triggerConfirm = (
@@ -61,45 +62,65 @@ const OrdersPage = () => {
     { id: "CANCELLED", label: "Đã hủy", icon: XCircle },
   ];
 
-  const fetchOrders = async (pageNum = page) => {
+  const fetchOrders = async () => {
     setIsLoading(true);
     try {
       let res;
       const cleanOrderId = searchOrderId.trim().replace(/^0+/, "");
 
-      if (cleanOrderId || paymentMethodCode || priceRange) {
-        const params = {
-          page: pageNum,
-          size: pageSize,
-        };
+      const params = {
+        page: 1,
+        size: 10000,
+      };
 
-        const numericOrderId = parseInt(cleanOrderId, 10);
-        if (!isNaN(numericOrderId)) {
-          params.orderId = numericOrderId;
+      const numericOrderId = parseInt(cleanOrderId, 10);
+      if (!isNaN(numericOrderId)) {
+        params.orderId = numericOrderId;
+      }
+      if (paymentMethodCode) {
+        params.paymentMethodCode = paymentMethodCode;
+      }
+      if (priceRange) {
+        const rangeObj = PRICE_RANGES.find((r) => r.value === priceRange);
+        if (rangeObj) {
+          if (rangeObj.min !== undefined) params.minTotal = rangeObj.min;
+          if (rangeObj.max !== undefined) params.maxTotal = rangeObj.max;
         }
-        if (paymentMethodCode) {
-          params.paymentMethodCode = paymentMethodCode;
-        }
-        if (priceRange) {
-          const rangeObj = PRICE_RANGES.find((r) => r.value === priceRange);
-          if (rangeObj) {
-            if (rangeObj.min !== undefined) params.minTotal = rangeObj.min;
-            if (rangeObj.max !== undefined) params.maxTotal = rangeObj.max;
-          }
-        }
+      }
 
+      if (params.orderId || params.paymentMethodCode || params.minTotal || params.maxTotal) {
         res = await orderServices.searchOrders(params);
       } else {
-        res = await orderServices.getAllOrders(pageNum, pageSize);
+        res = await orderServices.getAllOrders(1, 10000);
       }
-      setOrders(res?.data?.items || []);
-      setTotalPages(res?.data?.totalPage || 1);
+
+      const items = res?.data?.items || [];
+      setOrders(items);
+
+      // Compute status counts
+      const counts = {
+        ALL: items.length,
+      };
+      const statuses = [
+        "PENDING",
+        "PROCESSING",
+        "SHIPPED",
+        "DELIVERED",
+        "RETURN_REQUESTED",
+        "RETURNED",
+        "RETURN_REJECTED",
+        "CANCELLED",
+      ];
+      statuses.forEach((status) => {
+        counts[status] = items.filter((o) => o.orderStatus === status).length;
+      });
+      setStatusCounts(counts);
       console.log("order", res);
     } catch (error) {
       console.error("Lỗi khi tải danh sách đơn hàng:", error);
       toast.error("Không thể tải danh sách đơn hàng");
       setOrders([]);
-      setTotalPages(1);
+      setStatusCounts({});
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +137,8 @@ const OrdersPage = () => {
 
   useEffect(() => {
     loadPaymentMethods();
+    fetchOrders();
   }, []);
-
-  useEffect(() => {
-    fetchOrders(page);
-  }, [page]);
 
   useEffect(() => {
     setPage(1);
@@ -286,36 +304,62 @@ const OrdersPage = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchOrders(1);
+    fetchOrders();
   };
 
   const handleReset = () => {
     setSearchOrderId("");
     setPaymentMethodCode("");
     setPriceRange("");
+    setActiveTab("ALL");
     setPage(1);
 
     setIsLoading(true);
     orderServices
-      .getAllOrders(1, pageSize)
+      .getAllOrders(1, 10000)
       .then((res) => {
-        setOrders(res?.data?.items || []);
-        setTotalPages(res?.data?.totalPage || 1);
+        const items = res?.data?.items || [];
+        setOrders(items);
+
+        const counts = {
+          ALL: items.length,
+        };
+        const statuses = [
+          "PENDING",
+          "PROCESSING",
+          "SHIPPED",
+          "DELIVERED",
+          "RETURN_REQUESTED",
+          "RETURNED",
+          "RETURN_REJECTED",
+          "CANCELLED",
+        ];
+        statuses.forEach((status) => {
+          counts[status] = items.filter((o) => o.orderStatus === status).length;
+        });
+        setStatusCounts(counts);
       })
       .catch((err) => {
         console.error("Lỗi khi tải lại đơn hàng:", err);
         setOrders([]);
-        setTotalPages(1);
+        setStatusCounts({});
       })
       .finally(() => {
         setIsLoading(false);
       });
   };
 
-  const filteredOrders =
+  const tabFilteredOrders =
     activeTab === "ALL"
       ? orders
       : orders.filter((o) => o.orderStatus === activeTab);
+
+  const displayedOrders = tabFilteredOrders.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  const customTotalPages = Math.ceil(tabFilteredOrders.length / pageSize) || 1;
 
   return (
     <div className="space-y-6">
@@ -342,11 +386,11 @@ const OrdersPage = () => {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        orders={orders}
+        statusCounts={statusCounts}
       />
 
       <OrderList
-        orders={filteredOrders}
+        orders={displayedOrders}
         isLoading={isLoading}
         actionLoading={actionLoading}
         onViewDetail={handleViewDetail}
@@ -355,7 +399,7 @@ const OrdersPage = () => {
         onDeliver={handleDeliver}
         onCancel={handleCancel}
         page={page}
-        totalPages={totalPages}
+        totalPages={customTotalPages}
         onPageChange={setPage}
       />
 

@@ -77,7 +77,7 @@ const SearchBar = () => {
                     {searchKeyword && !isSearching && (
                         <span
                             style={{
-                                background: "linear-gradient(135deg,#3b82f6,#6366f1)",
+                                background: "#3b82f6",
                                 color: "#fff",
                                 fontSize: "11px",
                                 fontWeight: 700,

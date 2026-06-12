@@ -43,11 +43,13 @@ const ProductFormInfo = ({ form, categories, updateField }) => {
           required
         >
           <option value="">-- Chọn danh mục --</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
+          {categories
+            .filter((cat) => !cat.subCategories || cat.subCategories.length === 0)
+            .map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
         </select>
       </Field>
 

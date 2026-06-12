@@ -14,6 +14,8 @@ const ProductListPanel = ({
   onPrevPage,
   onNextPage,
   onSearch,
+  statusFilter = "all",
+  onStatusFilterChange,
 }) => {
   const [inputValue, setInputValue] = useState("");
 
@@ -47,10 +49,32 @@ const ProductListPanel = ({
           )}
         </div>
 
+        {/* Bộ lọc trạng thái */}
+        <div className="flex gap-1.5 mb-4">
+          {[
+            { id: "all", label: "Tất cả" },
+            { id: "active", label: "Đang hiển thị" },
+            { id: "inactive", label: "Đang ẩn" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onStatusFilterChange?.(tab.id)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                statusFilter === tab.id
+                  ? "bg-neutral-950 text-white"
+                  : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 border border-neutral-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-4">
           {products.length === 0 && (
             <p className="rounded-2xl bg-neutral-50 p-4 text-sm font-medium text-neutral-500">
-              Chưa có dữ liệu mẫu.
+              Không có sản phẩm nào phù hợp.
             </p>
           )}
           {products.map((product) => (
@@ -60,7 +84,22 @@ const ProductListPanel = ({
             >
               <div className="flex gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-black">{product.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-black text-neutral-900 truncate max-w-[200px]" title={product.name}>
+                      {product.name}
+                    </p>
+                    {product.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-600">
+                        <span className="size-1.5 rounded-full bg-green-500"></span>
+                        Hiển thị
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-neutral-400">
+                        <span className="size-1.5 rounded-full bg-neutral-400"></span>
+                        Ẩn
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-sm font-bold text-blue-700">
                     {formatCurrency(product.basePrice)}
                   </p>

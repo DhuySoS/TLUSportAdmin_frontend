@@ -33,7 +33,12 @@ const CouponsPage = () => {
     type: "primary",
   });
 
-  const triggerConfirm = (message, onConfirm, type = "primary", title = "Xác nhận hành động") => {
+  const triggerConfirm = (
+    message,
+    onConfirm,
+    type = "primary",
+    title = "Xác nhận hành động",
+  ) => {
     setConfirmModal({
       isOpen: true,
       title,
@@ -94,11 +99,13 @@ const CouponsPage = () => {
           if (editId === id) handleCancelEdit();
           loadCoupons();
         } catch (error) {
-          toast.error(error.response?.data?.message || "Không thể xóa mã giảm giá");
+          toast.error(
+            error.response?.data?.message || "Không thể xóa mã giảm giá",
+          );
         }
       },
       "danger",
-      "Xóa mã giảm giá"
+      "Xóa mã giảm giá",
     );
   };
 
@@ -125,6 +132,10 @@ const CouponsPage = () => {
     const end = new Date(form.endDate);
     if (start >= end) {
       toast.error("Ngày bắt đầu phải xảy ra trước ngày kết thúc");
+      return;
+    }
+    if (start < Date.now()) {
+      toast.error("Ngày bắt đầu phải xảy ra sau ngày hiện tại");
       return;
     }
 
@@ -289,7 +300,9 @@ const CouponsPage = () => {
                 Chưa có mã giảm giá nào.
               </p>
             )}
-            {coupons.map((coupon) => (
+            {[...coupons]
+              .sort((a, b) => (b.isActive ?? true) - (a.isActive ?? true))
+              .map((coupon) => (
               <div
                 key={coupon.id || coupon.code}
                 className="rounded-2xl border border-neutral-200 p-4"

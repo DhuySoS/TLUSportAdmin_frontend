@@ -8,13 +8,17 @@ const orderServices = {
     return res.data;
   },
 
-  searchOrders: async ({ orderId, paymentMethodCode, minTotal, maxTotal, page = 1, size = 10 }) => {
+  searchOrders: async ({ orderId, orderStatus, paymentMethodCode, minTotal, maxTotal, page = 1, size = 10 }) => {
     const res = await axiosInstance.get("/orders/search", {
-      params: { orderId, paymentMethodCode, minTotal, maxTotal, page, size },
+      params: { orderId, orderStatus, paymentMethodCode, minTotal, maxTotal, page, size },
     });
     return res.data;
   },
 
+  getOrderStatusCounts: async () => {
+    const res = await axiosInstance.get("/orders/status-counts");
+    return res.data;
+  },
 
   confirmOrder: async (orderId) => {
     const res = await axiosInstance.put(`/orders/${orderId}/confirm`);
@@ -42,12 +46,18 @@ const orderServices = {
   },
 
   approveReturn: async (returnId, data) => {
-    const res = await axiosInstance.put(`/order-returns/${returnId}/approve`, data);
+    const res = await axiosInstance.put(
+      `/order-returns/${returnId}/approve`,
+      data,
+    );
     return res.data;
   },
 
   rejectReturn: async (returnId, data) => {
-    const res = await axiosInstance.put(`/order-returns/${returnId}/reject`, data);
+    const res = await axiosInstance.put(
+      `/order-returns/${returnId}/reject`,
+      data,
+    );
     return res.data;
   },
 };

@@ -37,7 +37,7 @@ const navItems = [
   { title: "Người dùng", path: "/users", icon: Users },
   { title: "Tồn kho", path: "/inventory", icon: Boxes },
   { title: "Danh mục", path: "/categories", icon: Layers3 },
-  { title: "Thương hiệu", path: "/brands", icon: Tags },
+  // { title: "Thương hiệu", path: "/brands", icon: Tags },
   { title: "Thuộc tính", path: "/attributes", icon: Ruler },
   { title: "Vận chuyển", path: "/shipping-methods", icon: Truck },
   { title: "Thanh toán", path: "/payment-methods", icon: CreditCard },
@@ -117,18 +117,18 @@ const AdminLayout = () => {
   const allowedPathsForStaff = [
     "/orders",
     "/inventory",
-    "/products",
+    // "/products",
     // "/statistics",
     // "/coupons",
-    "/banners",
-    "/chatbot",
-    "/users",
+    // "/banners",
+    // "/chatbot",
+    // "/users",
   ];
   if (
     role === "ROLE_STAFF" &&
     !allowedPathsForStaff.includes(location.pathname)
   ) {
-    return <Navigate to="/users" replace />;
+    return <Navigate to="/orders" replace />;
   }
 
   // Lọc các item hiển thị trên Sidebar
