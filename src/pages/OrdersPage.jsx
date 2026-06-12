@@ -62,45 +62,8 @@ const OrdersPage = () => {
     { id: "CANCELLED", label: "Đã hủy", icon: XCircle },
   ];
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
+  const fetchStatusCounts = async () => {
     try {
-      let res;
-      const cleanOrderId = searchOrderId.trim().replace(/^0+/, "");
-
-      const params = {
-        page: 1,
-        size: 10000,
-      };
-
-      const numericOrderId = parseInt(cleanOrderId, 10);
-      if (!isNaN(numericOrderId)) {
-        params.orderId = numericOrderId;
-      }
-      if (paymentMethodCode) {
-        params.paymentMethodCode = paymentMethodCode;
-      }
-      if (priceRange) {
-        const rangeObj = PRICE_RANGES.find((r) => r.value === priceRange);
-        if (rangeObj) {
-          if (rangeObj.min !== undefined) params.minTotal = rangeObj.min;
-          if (rangeObj.max !== undefined) params.maxTotal = rangeObj.max;
-        }
-      }
-
-      if (params.orderId || params.paymentMethodCode || params.minTotal || params.maxTotal) {
-        res = await orderServices.searchOrders(params);
-      } else {
-        res = await orderServices.getAllOrders(1, 10000);
-      }
-
-      const items = res?.data?.items || [];
-      setOrders(items);
-
-      // Compute status counts
-      const counts = {
-        ALL: items.length,
-      };
       const statuses = [
         "PENDING",
         "PROCESSING",
@@ -111,16 +74,79 @@ const OrdersPage = () => {
         "RETURN_REJECTED",
         "CANCELLED",
       ];
-      statuses.forEach((status) => {
-        counts[status] = items.filter((o) => o.orderStatus === status).length;
+      const promises = statuses.map(async (status) => {
+        const res = await orderServices.searchOrders({
+          orderStatus: status,
+          page: 1,
+          size: 1,
+        });
+        return { status, count: res?.data?.totalElements || 0 };
       });
+      const results = await Promise.all(promises);
+      const counts = {};
+      let allCount = 0;
+      results.forEach(({ status, count }) => {
+        counts[status] = count;
+        allCount += count;
+      });
+      counts["ALL"] = allCount;
       setStatusCounts(counts);
-      console.log("order", res);
+    } catch (error) {
+      console.error("Lỗi khi tải số lượng đơn hàng theo trạng thái:", error);
+    }
+  };
+
+  const fetchOrders = async (pageNum = page, shouldFetchCounts = false) => {
+    setIsLoading(true);
+    try {
+      const cleanOrderId = searchOrderId.trim().replace(/^0+/, "");
+
+      const fetchOrdersPromise = (async () => {
+        if (cleanOrderId || paymentMethodCode || priceRange || activeTab !== "ALL") {
+          const params = {
+            page: pageNum,
+            size: pageSize,
+          };
+
+          const numericOrderId = parseInt(cleanOrderId, 10);
+          if (!isNaN(numericOrderId)) {
+            params.orderId = numericOrderId;
+          }
+          if (paymentMethodCode) {
+            params.paymentMethodCode = paymentMethodCode;
+          }
+          if (activeTab !== "ALL") {
+            params.orderStatus = activeTab;
+          }
+          if (priceRange) {
+            const rangeObj = PRICE_RANGES.find((r) => r.value === priceRange);
+            if (rangeObj) {
+              if (rangeObj.min !== undefined) params.minTotal = rangeObj.min;
+              if (rangeObj.max !== undefined) params.maxTotal = rangeObj.max;
+            }
+          }
+
+          return orderServices.searchOrders(params);
+        } else {
+          return orderServices.getAllOrders(pageNum, pageSize);
+        }
+      })();
+
+      const promises = [fetchOrdersPromise];
+      if (shouldFetchCounts) {
+        promises.push(fetchStatusCounts());
+      }
+
+      const [ordersRes] = await Promise.all(promises);
+
+      setOrders(ordersRes?.data?.items || []);
+      setTotalPages(ordersRes?.data?.totalPage || 1);
+      console.log("order", ordersRes);
     } catch (error) {
       console.error("Lỗi khi tải danh sách đơn hàng:", error);
       toast.error("Không thể tải danh sách đơn hàng");
       setOrders([]);
-      setStatusCounts({});
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
@@ -137,12 +163,12 @@ const OrdersPage = () => {
 
   useEffect(() => {
     loadPaymentMethods();
-    fetchOrders();
+    fetchStatusCounts();
   }, []);
 
   useEffect(() => {
-    setPage(1);
-  }, [activeTab]);
+    fetchOrders(page, false);
+  }, [page, activeTab]);
 
   const handleViewDetail = async (order) => {
     setSelectedOrder(order);
@@ -187,7 +213,7 @@ const OrdersPage = () => {
             return c;
           });
           setSelectedOrder(null);
-          fetchOrders();
+          fetchOrders(page, true);
         } catch (error) {
           toast.error(
             error.response?.data?.message || "Lỗi khi duyệt hoàn trả!",
@@ -224,7 +250,7 @@ const OrdersPage = () => {
             return c;
           });
           setSelectedOrder(null);
-          fetchOrders();
+          fetchOrders(page, true);
         } catch (error) {
           toast.error(
             error.response?.data?.message || "Lỗi khi từ chối hoàn trả!",
@@ -246,7 +272,7 @@ const OrdersPage = () => {
       toast.success(res.message || `${actionName} thành công!`, {
         position: "top-right",
       });
-      fetchOrders();
+      fetchOrders(page, true);
     } catch (error) {
       toast.error(
         error.response?.data?.message || `Lỗi khi thực hiện: ${actionName}`,
@@ -304,7 +330,7 @@ const OrdersPage = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchOrders();
+    fetchOrders(1, true);
   };
 
   const handleReset = () => {
@@ -315,51 +341,28 @@ const OrdersPage = () => {
     setPage(1);
 
     setIsLoading(true);
-    orderServices
-      .getAllOrders(1, 10000)
-      .then((res) => {
-        const items = res?.data?.items || [];
-        setOrders(items);
-
-        const counts = {
-          ALL: items.length,
-        };
-        const statuses = [
-          "PENDING",
-          "PROCESSING",
-          "SHIPPED",
-          "DELIVERED",
-          "RETURN_REQUESTED",
-          "RETURNED",
-          "RETURN_REJECTED",
-          "CANCELLED",
-        ];
-        statuses.forEach((status) => {
-          counts[status] = items.filter((o) => o.orderStatus === status).length;
-        });
-        setStatusCounts(counts);
+    Promise.all([
+      orderServices.getAllOrders(1, pageSize),
+      fetchStatusCounts(),
+    ])
+      .then(([res]) => {
+        setOrders(res?.data?.items || []);
+        setTotalPages(res?.data?.totalPage || 1);
       })
       .catch((err) => {
         console.error("Lỗi khi tải lại đơn hàng:", err);
         setOrders([]);
-        setStatusCounts({});
+        setTotalPages(1);
       })
       .finally(() => {
         setIsLoading(false);
       });
   };
 
-  const tabFilteredOrders =
-    activeTab === "ALL"
-      ? orders
-      : orders.filter((o) => o.orderStatus === activeTab);
-
-  const displayedOrders = tabFilteredOrders.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
-
-  const customTotalPages = Math.ceil(tabFilteredOrders.length / pageSize) || 1;
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-6">
@@ -385,12 +388,12 @@ const OrdersPage = () => {
       <OrderTabs
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         statusCounts={statusCounts}
       />
 
       <OrderList
-        orders={displayedOrders}
+        orders={orders}
         isLoading={isLoading}
         actionLoading={actionLoading}
         onViewDetail={handleViewDetail}
@@ -399,7 +402,7 @@ const OrdersPage = () => {
         onDeliver={handleDeliver}
         onCancel={handleCancel}
         page={page}
-        totalPages={customTotalPages}
+        totalPages={totalPages}
         onPageChange={setPage}
       />
 
